@@ -1,0 +1,333 @@
+//  ----------------------------------------------------------------------
+//  =VARS
+//  ----------------------------------------------------------------------
+
+//  =CONTENT
+$content: 960px !default;
+
+
+//  =COLS
+$cols:             3     !default;
+$cols-total:       $cols !default;
+$cols-fixed-total: $cols !default;
+$cols-css-total:   $cols !default;
+
+
+//  =SPACING
+$gutter:      20px !default;
+$gutter-v:    50px !default;
+$gutter-main: $gutter;
+
+
+//  =VIEWPORTS
+$full:       $content + $gutter-main * 2;
+$gt-full:    $full + 1;
+$lt-full:    $full - 1;
+$desktop:    960px !default;
+$lt-desktop: $desktop - 1;
+$tablet:     768px !default;
+$lt-tablet:  $tablet - 1;
+$mobile:     568px !default;
+$lt-mobile:  $mobile - 1;
+$mobile-sm:  320px !default;
+$bps: full $full, lt-full $lt-full, tablet $tablet, lt-tablet $lt-tablet, mobile $mobile, lt-mobile $lt-mobile, mobile-sm $mobile-sm;
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =FUNCTIONS
+//  ----------------------------------------------------------------------
+
+@function w ($target, $context) {
+    @return ($target / $context) * 100%;
+}
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =MIXINS
+//  ----------------------------------------------------------------------
+
+@mixin box-sizing($sizing: border-box) {
+    -moz-box-sizing: $sizing;
+         box-sizing: $sizing;
+}
+
+
+@mixin cf {
+    &:before,
+    &:after {
+        content: ' ';
+        display: table;
+    }
+    &:after {
+        clear: both;
+    }
+}
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =RESET
+//  ----------------------------------------------------------------------
+
+*,
+*:before,
+*:after {
+    @include box-sizing;
+}
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =MEDIA QUERIES
+//  ----------------------------------------------------------------------
+
+@mixin mq($bp) {
+    @media (max-width: $bp) {
+        @content;
+    }
+}
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =COLUMNS
+//  ----------------------------------------------------------------------
+
+@mixin is-cols($gutter: $gutter) {
+    margin-right: -$gutter / 2 !important;
+    margin-left: -$gutter / 2 !important;
+    @include cf;
+}
+
+@mixin col {
+    min-height: 1px;
+}
+
+.cols {
+    @include is-cols($gutter);
+}
+
+.cols > [class*="col-"] {
+    @include col;
+    float: left;
+    padding-right: $gutter / 2;
+    padding-left: $gutter / 2;
+}
+
+.cols-rev > [class*="col-"] {
+    @include col;
+    float: right;
+}
+
+
+@mixin generate-cols($cols, $bp: '') {
+    @for $i from 2 through $cols {
+        @if $i == 2 {
+            .col-#{$bp}-1 {
+                width: 100%;
+            }
+        }
+
+        @for $x from 1 through $i {
+            @if $bp == '' {
+                .col-#{$x}-#{$i} {
+                    width: w($x,$i);
+                }
+            } @else {
+                .col-#{$bp}-#{$x}-#{$i} {
+                    width: w($x,$i);
+                }
+            }
+        }
+    }
+}
+
+@each $bp in $bps {
+    @if nth($bp,1)== "full" {
+        @include generate-cols($cols-total);
+    } @else {
+        @media (max-width: nth($bp,2)) {
+            @include generate-cols($cols-total, nth($bp,1));
+        }
+    }
+}
+
+
+@mixin col($gutter: $gutter) {
+    > [class*="col-"] {
+        padding-right: $gutter / 2;
+        padding-left: $gutter / 2;
+    }
+}
+
+@mixin cols($gutter: $gutter) {
+    .cols {
+        @include is-cols($gutter);
+        @include col($gutter);
+    }
+}
+
+@mixin cols-this($gutter: $gutter) {
+    @include is-cols($gutter);
+    @include col($gutter);
+}
+
+@mixin reset-cols {
+    .cols {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    [class*="col-"] {
+        width: auto !important;
+        float: none !important;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+    }
+}
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =COLUMNS - FIXED
+//  ----------------------------------------------------------------------
+
+@mixin col-reset {
+    width: auto;
+    float: none;
+    margin: 0;
+}
+
+.cols-fixed .col-fixed {
+    float: right;
+}
+
+@mixin generate-cols-fixed($cols-total) {
+    @for $i from 1 through $cols-total {
+        @for $cols from 1 through $cols-total {
+            @if ($cols < $cols-total) {
+                $ratio: $cols / $cols-total;
+                $sidebar-total: $full - $full * $ratio;
+                $width: $full - $sidebar-total;
+
+                > .col-#{$cols}-#{$cols-total} {
+                    width: auto;
+                    margin-right: $sidebar-total;
+                }
+
+                .col-fixed.col-#{$cols}-#{$cols-total} {
+                    width: $width;
+                    margin-right: 0;
+                    margin-left: -$width;
+                }
+            }
+        }
+
+        $cols-total: $cols-total - 1;
+    }
+
+    @each $bp in $bps {
+        .cols-fixed-#{nth($bp,1)} {
+            @media (max-width: nth($bp,2)) {
+                > [class*="col-"] {
+                    @include col-reset;
+                }
+
+                > .col-fixed {
+                    @include col-reset;
+                    margin: $gutter-v 0 0;
+                }
+            }
+        }
+    }
+}
+
+
+@include generate-cols-fixed($cols-fixed-total);
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =COLUMN - SOLO
+//  ----------------------------------------------------------------------
+
+[class*="col-"].col-solo {
+    width: auto;
+}
+
+@mixin generate-cols-solo($cols-total) {
+    @for $i from 1 through $cols-total {
+        @for $cols from 1 through $cols-total {
+            @if ($cols < $cols-total) {
+                .col-#{$cols}-#{$cols-total}.col-solo {
+                    max-width: $full / $cols-total * $cols;
+                }
+            }
+        }
+
+        $cols-total: $cols-total - 1;
+    }
+}
+
+@include generate-cols-solo($cols-total);
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =CSS COLUMNS
+//  ----------------------------------------------------------------------
+
+@mixin col-count($cols) {
+    -webkit-column-count: $cols;
+       -moz-column-count: $cols;
+            column-count: $cols;
+}
+
+@mixin col-gap($gutter) {
+    -webkit-column-gap: $gutter;
+       -moz-column-gap: $gutter;
+            column-gap: $gutter;
+}
+
+@mixin cols-css($cols, $gutter: $gutter) {
+    @include col-count($cols);
+    @include col-gap($gutter);
+}
+
+@for $i from 1 through $cols-css-total {
+    .cols-#{$i} {
+        @include cols-css($i);
+    }
+}
+
+@mixin col-unit {
+    -webkit-column-break-inside: avoid;
+                   break-inside: avoid;
+}
+
+.col-unit { @include col-unit; }
+
+
+
+
+//  ----------------------------------------------------------------------
+//  =SECTIONS
+//  ----------------------------------------------------------------------
+
+@each $bp in $bps {
+    .section-#{nth($bp,1)} {
+        @include mq(#{nth($bp,2)}) {
+            margin: 0 0 $gutter-v;
+        }
+    }
+}
